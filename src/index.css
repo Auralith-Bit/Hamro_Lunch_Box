@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { background: #FFF5E4; font-family: 'Nirmala UI', 'Noto Sans Devanagari', Hind, 'Segoe UI', sans-serif; }
+#root { width: 100%; min-height: 100vh; overflow-x: clip; }
+main, aside, section, .grid > *, .flex > * { min-width: 0; }
+main { max-width: 100%; overflow-x: clip; }
+nav { min-width: 0; max-width: 100%; }
+input, select, textarea, button { max-width: 100%; }
+.overflow-x-auto { overscroll-behavior-inline: contain; scrollbar-width: thin; }
+@media (min-width: 768px) {
+  aside { flex: 0 0 15rem; min-height: 0; }
+  aside nav { flex: 1 1 0%; min-height: 0; overflow-x: hidden; overflow-y: auto; align-content: start; padding-bottom: 1rem; scrollbar-gutter: stable; }
+}
+@media (max-width: 639px) {
+  table { font-size: 0.8125rem; }
+}
+@media print {
+  @page { size: A4 portrait; margin: 10mm; }
+  html, body, #root { width: 100% !important; height: auto !important; min-height: 0 !important; margin: 0 !important; overflow: visible !important; background: white !important; }
+  body * { visibility: hidden !important; }
+  .invoice-overlay { position: static !important; inset: auto !important; display: block !important; width: 100% !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: 0 !important; background: transparent !important; }
+  .invoice-overlay > div { width: 100% !important; max-width: none !important; margin: 0 !important; }
+  .invoice-print, .invoice-print * { visibility: visible !important; }
+  .invoice-print { position: static !important; width: 100% !important; max-width: none !important; min-width: 0 !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important; padding: 0 !important; font-size: 10pt !important; break-inside: avoid !important; page-break-inside: avoid !important; }
+  .invoice-print table { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; font-size: 9pt !important; }
+  .invoice-print th, .invoice-print td { padding: 4px 6px !important; }
+  .invoice-print img { max-width: 72px !important; }
+  .invoice-print section, .invoice-print table, .invoice-print tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+  aside, nav, .noprint { display: none !important; }
+}
