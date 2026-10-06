@@ -1,5 +1,7 @@
-node_modules
+.git
 **/node_modules
 **/dist
 .env
+**/.env
 backend/.env
+*.log
