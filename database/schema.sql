@@ -21,9 +21,10 @@ CREATE TABLE IF NOT EXISTS sessions (
   KEY idx_sessions_expiry (expires_at)
 );
 
--- The existing UI edits a shared business workspace as one state tree. Keeping
--- that tree in MySQL lets the frontend move off browser-local data atomically.
--- Entities can be extracted into relational tables as CRUD endpoints are added.
+-- The UI edits a shared business workspace as one state tree; this table stores
+-- that tree in MySQL and the revision column provides optimistic locking for
+-- concurrent saves. Entities can be extracted into relational tables as CRUD
+-- endpoints are added.
 CREATE TABLE IF NOT EXISTS business_state (
   id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
   payload JSON NOT NULL,

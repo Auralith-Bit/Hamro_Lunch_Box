@@ -6,7 +6,8 @@ Restaurant ordering and operations app arranged as a small full-stack monorepo. 
 
 ```text
 frontend/                 React application and Vite configuration
-  src/                    Pages, components, and frontend data
+  src/                    Pages, components, and shared UI constants
+  nginx.conf              Reverse proxy used by the production image
 backend/                  Express API
   src/config/              MySQL connection pool
   src/routes/              API route handlers
@@ -15,31 +16,54 @@ database/                  MySQL schema and future migrations
 
 ## Setup
 
+### Docker (full stack)
+
+Copy the example environment file, set strong passwords, and start everything:
+
+```powershell
+copy .env.docker.example .env
+docker compose up -d --build
+```
+
+Open `http://localhost:8080` (change the port with `APP_PORT`). Compose creates MySQL, applies `database/schema.sql` on first start, builds the API and the nginx-served frontend, and wires them together on an internal network. Only the frontend publishes a host port.
+
+### Local development
+
 Install workspace dependencies from the project root:
 
 ```powershell
 npm install
 ```
 
-Create the local MySQL database using `database/schema.sql`, then copy `backend/.env.example` to `backend/.env` and set the local database credentials. Start the API and frontend in separate terminals:
+Create the local MySQL database using `database/schema.sql`, then copy `backend/.env.example` to `backend/.env` and set the local database credentials (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`) plus the first `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_NAME`. Start the API and frontend in separate terminals:
 
 ```powershell
 npm run dev:backend
 npm run dev
 ```
 
-The API listens on `http://localhost:3000`; `GET /api/health` checks the MySQL connection. The frontend runs on Vite's usual `http://localhost:5173` address. Production frontend builds use `npm run build` and produce `frontend/dist`.
+The API listens on `http://localhost:3000`; `GET /api/health` checks the MySQL connection and returns 503 when the database is unreachable. The frontend runs on Vite's usual `http://localhost:5173` address and proxies `/api` to the API, so the browser only ever talks to one origin. Production frontend builds use `npm run build` and produce `frontend/dist`.
 
-## Current data behavior
+## Data and auth behavior
 
-The existing frontend still stores business data in browser local storage. The backend and relational schema are the foundation for moving that data behind authenticated API endpoints; the UI is not yet connected to MySQL. Demo credentials remain frontend-only and are not suitable for a public deployment. Export backups before clearing browser data.
+The frontend is fully connected to the API: it loads state from `GET /api/business` and autosaves with `PUT /api/business`. All business data lives in the MySQL `business_state` table as a single JSON document guarded by a `revision` counter (concurrent saves get `409 Conflict` and must reload). Nothing is stored in browser local storage, so clearing browser data does not remove saved records; use the in-app backup export instead.
 
-## Demo accounts
+Authentication is cookie based (`hlb_session`, `HttpOnly`, `SameSite=Strict`, 12-hour lifetime) against the `users` and `sessions` tables, with scrypt password hashing. Roles are enforced server side: `reception` cannot manage accounts, and `delivery` can only read its own orders and change their status or payments.
 
-| Role | Username | Password |
-|---|---|---|
-| Admin | `admin` | `admin123` |
-| Reception | `reception` | `reception123` |
-| Delivery | `driver1` / `driver2` | `driver123` |
+The API has no CORS middleware by design — it is meant to be reached through the Vite dev proxy or the nginx reverse proxy on the same origin.
+
+## Accounts
+
+There are no seeded or demo logins. The first administrator is created at API startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD` (minimum 12 characters) in the environment. Every other account is created by an administrator in Settings → Accounts, with a temporary password handed over out of band.
+
+| Role | Access |
+|---|---|
+| Admin | Everything, including account management |
+| Reception | Orders, billing, inventory, reports; no account management |
+| Delivery | Only orders assigned to that driver |
+
+## Deployment notes
+
+`docker compose` is the supported deployment path and serves frontend and API from one origin. `vercel.json` produces a static frontend build only: its rewrite sends every path to `index.html` and there is no `/api` route, so a static-only host will render the UI but every API call will fail unless you add a rewrite from `/api/*` to a separately hosted backend. When serving the API behind HTTPS, set `COOKIE_SECURE=true` so session cookies carry the `Secure` flag.
 
 VAT is optional and disabled by default. The app does not connect to IRD/CBMS and is not presented as IRD-listed e-billing software.
